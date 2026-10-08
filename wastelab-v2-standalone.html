@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WasteLab – Burn or Recycle? (THPT Chuyên Chu Văn An)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deep: '#07241b',
+                        forest: '#0f4a35',
+                        brand: '#176b4d',
+                        brandlight: '#52e19d',
+                        canvas: '#f4f7f5'
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- React & Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            background-color: #f4f7f5;
+            color: #17342a;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="antialiased selection:bg-emerald-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ==========================================
+        // 1. DATA: 28 VẬT LIỆU BAN ĐẦU
+        // ==========================================
+        const INITIAL_MATERIALS = [
+            {
+                id: 'mat_pet_clean',
+                name: 'Chai nhựa PET sạch',
+                commonName: 'Chai nước lọc, chai nước ngọt trong suốt',
+                synonyms: ['chai pet', 'chai nuoc', 'chai nhua', 'chai pepsi', 'pet', 'chai aquafina'],
+                category: 'plastic',
+                categoryLabel: 'Nhựa',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Tráng sơ bằng nước để sạch cặn ngọt',
+                    'Tháo nắp và vòng cổ chai (nắp bằng nhựa HDPE/PP khác)',
+                    'Ấn bẹp thân chai để tiết kiệm diện tích'
+                ],
+                heatingValueMJ: 22,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_pet_dirty',
+                name: 'Chai nhựa PET dính dầu mỡ / hóa chất',
+                commonName: 'Chai dầu ăn, chai nước rửa chén, chai nhớt',
+                synonyms: ['chai dau an', 'chai hoa chat', 'chai nhot', 'chai rua bat'],
+                category: 'plastic',
+                categoryLabel: 'Nhựa',
+                treatmentGroup: 'residual',
+                treatmentLabel: 'RÁC CÒN LẠI (NHỰA NHIỄM BẨN)',
+                defaultInstructions: [
+                    'Khó tái chế cơ học do nhiễm bẩn sâu',
+                    'Đóng chặt nắp, bỏ vào thùng rác sinh hoạt còn lại',
+                    'Chỉ đưa vào thu hồi nhiệt điện nếu cơ sở địa phương tiếp nhận'
+                ],
+                safetyWarning: 'Không dùng lại để đựng thực phẩm hoặc nước uống.',
+                heatingValueMJ: 20,
+                canRecycle: false,
+                isHazardous: false
+            },
+            {
+                id: 'mat_hdpe',
+                name: 'Can / Chai nhựa HDPE',
+                commonName: 'Chai dầu gội, sữa tắm, can nước giặt',
+                synonyms: ['chai dau goi', 'can nuoc giat', 'chai hdpe', 'nhua hdpe', 'can nhua'],
+                category: 'plastic',
+                categoryLabel: 'Nhựa',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Dùng hết dung dịch bên trong',
+                    'Tráng sạch bọt xà phòng',
+                    'Gom chung với lô nhựa tái chế giá trị cao'
+                ],
+                heatingValueMJ: 40,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_soft_plastic',
+                name: 'Túi nilon sạch (LDPE / LLDPE)',
+                commonName: 'Túi quai xách siêu thị, bọc chống sốc',
+                synonyms: ['tui nilon', 'bich nilon', 'tui xop', 'mang boc', 'bong bong khi', 'tui pe'],
+                category: 'plastic',
+                categoryLabel: 'Nhựa',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Giữ sạch và khô ráo, không dính thức ăn thừa',
+                    'Cuộn ép chặt vào một túi lớn hơn',
+                    'Chuyển cho điểm thu gom tái chế màng film'
+                ],
+                heatingValueMJ: 38,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_foam_ps',
+                name: 'Hộp xốp / Mút xốp (PS)',
+                commonName: 'Hộp cơm xốp, thùng xốp đựng đá',
+                synonyms: ['hop xop', 'thung xop', 'mut xop', 'hop com xop'],
+                category: 'plastic',
+                categoryLabel: 'Nhựa',
+                treatmentGroup: 'residual',
+                treatmentLabel: 'RÁC CÒN LẠI',
+                defaultInstructions: [
+                    'Hộp xốp dính dầu mỡ không thể tái chế cơ học',
+                    'Bẻ nhỏ bỏ vào túi rác sinh hoạt còn lại',
+                    'Thùng xốp sạch nguyên vẹn nên dùng lại để trồng cây hoặc giữ nhiệt'
+                ],
+                canReuse: true,
+                heatingValueMJ: 35,
+                isHazardous: false
+            },
+            {
+                id: 'mat_carton',
+                name: 'Bìa carton / Thùng giấy',
+                commonName: 'Thùng carton chuyển hàng, bìa các tông',
+                synonyms: ['thung carton', 'bia carton', 'hop giay', 'carton', 'thung giay'],
+                category: 'paper',
+                categoryLabel: 'Giấy',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Gỡ bỏ băng dính nhựa và đinh ghim kim loại',
+                    'Gấp phẳng thùng carton để tiết kiệm diện tích',
+                    'Giữ khô ráo tuyệt đối, không để dính nước mưa'
+                ],
+                heatingValueMJ: 16,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_paper_white',
+                name: 'Giấy văn phòng / Sách vở học sinh',
+                commonName: 'Giấy A4, vở viết cũ, sách báo cũ',
+                synonyms: ['giay a4', 'vo cu', 'sach cu', 'bao cu', 'giay trang', 'giay in'],
+                category: 'paper',
+                categoryLabel: 'Giấy',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Loại bỏ bìa nilon và lò xo nhựa/sắt',
+                    'Xếp phẳng theo cọc và buộc dây gọn gàng',
+                    'Sách truyện còn tốt nên ưu tiên quyên góp dùng lại'
+                ],
+                canReuse: true,
+                heatingValueMJ: 14,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_tetra_pak',
+                name: 'Vỏ hộp sữa nhiều lớp (Tetra Pak)',
+                commonName: 'Vỏ hộp sữa chua uống, sữa tươi giấy',
+                synonyms: ['hop sua', 'vo hop sua', 'tetra pak', 'hop sua giay', 'hop milo'],
+                category: 'paper',
+                categoryLabel: 'Giấy nhiều lớp',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU (CHUYÊN DỤNG)',
+                defaultInstructions: [
+                    'Bóc 4 tai hộp sữa và ấn bẹp phẳng',
+                    'Cắt góc tráng sạch bên trong hoặc cắm ống hút vào lòng hộp',
+                    'Mang đến trạm thu gom vỏ hộp sữa chuyên dụng'
+                ],
+                heatingValueMJ: 15,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_paper_dirty',
+                name: 'Giấy ăn / Giấy vệ sinh đã sử dụng',
+                commonName: 'Khăn giấy ướt, giấy lau dầu mỡ',
+                synonyms: ['giay an', 'giay ve sinh', 'khan giay', 'giay lau'],
+                category: 'paper',
+                categoryLabel: 'Giấy',
+                treatmentGroup: 'residual',
+                treatmentLabel: 'RÁC CÒN LẠI',
+                defaultInstructions: [
+                    'Sợi cellulose đã nát và chứa vi khuẩn/dầu',
+                    'Bỏ trực tiếp vào thùng rác sinh hoạt thông thường',
+                    'Tuyệt đối không bỏ lẫn vào túi giấy tái chế'
+                ],
+                heatingValueMJ: 8,
+                canRecycle: false,
+                isHazardous: false
+            },
+            {
+                id: 'mat_aluminum_can',
+                name: 'Lon nhôm đồ uống',
+                commonName: 'Lon coca, lon bia, lon nước ngọt',
+                synonyms: ['lon bia', 'lon nuoc ngot', 'lon nhom', 'vo lon', 'can nhom'],
+                category: 'metal',
+                categoryLabel: 'Kim loại',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Dốc hết nước thừa bên trong lon',
+                    'Giữ lại khoen bật gắn trên lon',
+                    'Bẹp dẹp lon để gom thành lô kim loại giá trị cao'
+                ],
+                heatingValueMJ: 0,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_steel_can',
+                name: 'Hộp thiếc / Sắt tây',
+                commonName: 'Hộp sữa đặc, hộp cá hộp, lon sữa bột',
+                synonyms: ['hop sua dac', 'hop ca hop', 'lon sua bot', 'hop thiec'],
+                category: 'metal',
+                categoryLabel: 'Kim loại',
+                treatmentGroup: 'recycle',
+                treatmentLabel: 'TÁI CHẾ VẬT LIỆU',
+                defaultInstructions: [
+                    'Tráng sạch cặn thức ăn hoặc dầu bảo quản',
+                    'Gập nắp vào trong tránh mép sắc',
+                    'Bàn giao cho người thu mua ve chai hoặc điểm thu gom'
+                ],
+                heatingValueMJ: 0,
+                canRecycle: true,
+                isHazardous: false
+            },
+            {
+                id: 'mat_glass_bottle',
+                name: 'Chai / Lọ thủy tinh nguyên vẹn',
+                commonName: 'Chai nước mắm, chai bia thủy tinh, hũ mứt',
+                synonyms: ['chai thuy tinh', 'hu thuy tinh', 'lo thuy tinh', 'chai bia thuy tinh'],
+                category: 'glass',
+                categoryLabel: 'Thủy tinh',
+                treatmentGroup: 'reuse',
+                treatmentLabel: 'DÙNG LẠI (TÁI SỬ DỤNG)',
+                defaultInstructions: [
+                    'Ưu tiên dùng lại đựng gia vị, ngâm thực phẩm',
+                    'Rửa sạch, tháo nút cao su hoặc nắp sắt',
+                    'Xếp đứng trong thùng carton tránh va chạm vỡ'
+                ],
+                canReuse: true,
+                heatingValueMJ: 0,
+                isHazardous: false
+            },
+            {
+                id: 'mat_battery',
+                name: 'Pin đã qua sử dụng (AA, AAA, Cúc áo)',
+                commonName: 'Pin con thỏ, pin remote, pin đồng hồ',
+                synonyms: ['pin', 'pin con tho', 'pin aa', 'pin aaa', 'pin tieu', 'pin cu', 'pin remote'],
+                category: 'battery_electronic',
+                categoryLabel: 'Pin & Điện tử',
+                treatmentGroup: 'specialized',
+                treatmentLabel: 'THU GOM RIÊNG (CHẤT THẢI NGUY HẠI)',
+                defaultInstructions: [
+                    'Dán băng dính vào 2 đầu cực để tránh chập cháy',
+                    'Đựng trong lọ nhựa kín để nơi cao ráo',
+                    'Mang đến điểm thu gom pin chuyên dụng tại UBND hoặc siêu thị'
+                ],
+                safetyWarning: 'CHỨA KIM LOẠI NẶNG (Chì, Thủy ngân, Cadimi). Tuyệt đối không vứt vào thùng rác thông thường và không được tự đốt!',
+                heatingValueMJ: 0,
+                isHazardous: true
+            },
+            {
+                id: 'mat_e_waste',
+                name: 'Rác điện tử nhỏ (Điện thoại cũ, sạc, tai nghe)',
+                commonName: 'Dây cáp hỏng, bàn phím cũ, củ sạc, bo mạch',
+                synonyms: ['dien thoai cu', 'day sac', 'tai nghe', 'e waste', 'chuot hong'],
+                category: 'battery_electronic',
+                categoryLabel: 'Pin & Điện tử',
+                treatmentGroup: 'specialized',
+                treatmentLabel: 'THU GOM RIÊNG',
+                defaultInstructions: [
+                    'Xóa sạch dữ liệu nếu máy còn lên nguồn',
+                    'Không đập vỡ màn hình hoặc tháo pin phồng',
+                    'Giao cho đơn vị thu hồi rác điện tử có cấp phép'
+                ],
+                heatingValueMJ: 5,
+                isHazardous: true
+            },
+            {
+                id: 'mat_organic_food',
+                name: 'Thực phẩm thừa / Rác nhà bếp dễ phân hủy',
+                commonName: 'Cuống rau, vỏ trái cây, bã trà, bã cà phê',
+                synonyms: ['thuc pham thua', 'rac nha bep', 'vo hoa qua', 'ba ca phe', 'ba tra', 'rau cu'],
+                category: 'organic',
+                categoryLabel: 'Rác hữu cơ',
+                treatmentGroup: 'organic',
+                treatmentLabel: 'RÁC HỮU CƠ (Ủ PHÂN COMPOST)',
+                defaultInstructions: [
+                    'Gạn kiệt nước thừa để giảm trọng lượng và mùi hôi',
+                    'Ủ làm phân compost bón cây hoặc nuôi trùn quế',
+                    'Giao cho tuyến thu gom hữu cơ riêng nếu địa phương có phân loại'
+                ],
+                canReuse: true,
+                heatingValueMJ: 4,
+                isHazardous: false
+            }
+        ];
+
+        // ==========================================
+        // 2. DATA: ĐIỂM THU GOM THỰC TẾ
+        // ==========================================
+        const INITIAL_HUBS = [
+            {
+                id: 'hub_gl',
+                name: 'Trạm Đổi Rác Green Life (Tây Hồ)',
+                district: 'Tây Hồ, Hà Nội',
+                address: 'Số 12 ngõ 89 Lạc Long Quân, P. Nghĩa Đô, Q. Cầu Giấy (giáp Tây Hồ)',
+                phone: '0981 234 567',
+                acceptedMaterials: ['mat_pet_clean', 'mat_carton', 'mat_paper_white', 'mat_aluminum_can', 'mat_tetra_pak', 'mat_battery'],
+                conditions: 'Rác sạch khô, phân loại riêng theo từng bao. Không nhận rác dính dầu mỡ.',
+                pricing: 'Đổi lấy sen đá, cây cảnh mini hoặc quà thân thiện môi trường',
+                verifiedDate: '2026-10-02',
+                verificationSource: 'Nhóm nghiên cứu khảo sát trực tiếp tại điểm'
+            },
+            {
+                id: 'hub_pin',
+                name: 'Thùng Thu Gom Pin UBND Phường Thụy Khuê',
+                district: 'Tây Hồ, Hà Nội',
+                address: 'Trụ sở UBND Phường Thụy Khuê, số 157 Thụy Khuê, Q. Tây Hồ',
+                phone: '024 3847 1234',
+                acceptedMaterials: ['mat_battery'],
+                conditions: 'Chỉ tiếp nhận pin cúc áo, pin tiểu AA/AAA gia dụng. Dán băng dính 2 đầu cực.',
+                pricing: 'Tiếp nhận xử lý phi lợi nhuận',
+                verifiedDate: '2026-09-28',
+                verificationSource: 'Biên bản ghi nhận điểm thu gom công cộng UBND Phường'
+            },
+            {
+                id: 'hub_tetra',
+                name: 'Thùng Thu Hồi Vỏ Hộp Sữa Tetra Pak (WinMart Xuân La)',
+                district: 'Tây Hồ, Hà Nội',
+                address: 'Siêu thị WinMart, Tòa chung cư Kosmo Tây Hồ, Xuân La',
+                phone: '024 7108 8899',
+                acceptedMaterials: ['mat_tetra_pak'],
+                conditions: 'Hộp sữa đã bóc 4 tai, ấn dẹp và tráng sạch ruột. Không nhận hộp còn nước thiu.',
+                pricing: 'Chương trình EPR của PRO Việt Nam',
+                verifiedDate: '2026-09-15',
+                verificationSource: 'Xác nhận theo danh mục điểm thu hồi của PRO Việt Nam'
+            },
+            {
+                id: 'hub_vr',
+                name: 'Điểm Thu Hồi Rác Điện Tử Vietnam Recycles',
+                district: 'Cầu Giấy, Hà Nội',
+                address: 'Chi cục Bảo vệ Môi trường Hà Nội, số 17 Trung Yên 3, Cầu Giấy',
+                phone: '0909 999 123',
+                acceptedMaterials: ['mat_battery', 'mat_e_waste'],
+                conditions: 'Thiết bị điện tử cũ hỏng, bo mạch, pin. Giữ nguyên trạng, không đập vỡ.',
+                pricing: 'Tiếp nhận xử lý chuẩn quốc tế miễn phí',
+                verifiedDate: '2026-08-20',
+                verificationSource: 'Chương trình Vietnam Recycles được Bộ TN&MT xác nhận'
+            }
+        ];
+
+        // ==========================================
+        // 3. MAIN APP COMPONENT
+        // ==========================================
+        function App() {
+            const [currentTab, setCurrentTab] = useState('home');
+            const [dataMode, setDataMode] = useState('real');
+            const [userDistrict, setUserDistrict] = useState('Tây Hồ, Hà Nội');
+
+            // Quản lý lô & nhật ký bàn giao (Đúng ca 5kg -> nhận 4kg / từ chối 1kg)
+            const [batches, setBatches] = useState([
+                {
+                    id: 'LO-2026-001',
+                    name: 'Chai PET sạch (5 kg) - 08/10',
+                    materialId: 'mat_pet_clean',
+                    materialName: 'Chai nhựa PET sạch',
+                    quantity: 5,
+                    remainingQuantity: 1, // Còn lại 1 kg
+                    unit: 'kg',
+                    weightType: 'weighed',
+                    dataMode: 'demo'
+                }
+            ]);
+
+            const [handovers, setHandovers] = useState([
+                {
+                    id: 'BG-2026-001',
+                    batchId: 'LO-2026-001',
+                    batchName: 'Chai PET sạch (5 kg) - 08/10',
+                    hubName: 'Green Life Tây Hồ',
+                    date: '2026-10-08',
+                    offeredWeight: 5,
+                    acceptedWeight: 4,
+                    rejectedWeight: 1,
+                    rejectionReason: '1 kg dính dầu mỡ không đạt tiêu chuẩn rửa sạch',
+                    verificationLevel: 'verified_by_hub',
+                    evidenceCode: 'PHIEU-CAN-0810-01',
+                    dataMode: 'demo'
+                }
+            ]);
+
+            const [searchKeyword, setSearchKeyword] = useState('');
+            const [selectedMaterial, setSelectedMaterial] = useState(null);
+            const [toastMessage, setToastMessage] = useState(null);
+
+            // Modal ghi bàn giao
+            const [handoverModalOpen, setHandoverModalOpen] = useState(false);
+            const [targetBatch, setTargetBatch] = useState(null);
+            const [offeredInput, setOfferedInput] = useState(5);
+            const [acceptedInput, setAcceptedInput] = useState(4);
+            const [rejectedInput, setRejectedInput] = useState(1);
+            const [rejectionReasonInput, setRejectionReasonInput] = useState('');
+
+            const showToast = (msg) => {
+                setToastMessage(msg);
+                setTimeout(() => setToastMessage(null), 2800);
+            };
+
+            const currentBatches = batches.filter(b => b.dataMode === dataMode);
+            const currentHandovers = handovers.filter(h => h.dataMode === dataMode);
+
+            // 3 thẻ thống kê theo đặc tả Trang 3 & 10
+            const totalDeliveredKg = currentHandovers.reduce((acc, h) => acc + h.acceptedWeight, 0);
+            const verifiedDeliveredKg = currentHandovers
+                .filter(h => h.verificationLevel === 'verified_by_hub')
+                .reduce((acc, h) => acc + h.acceptedWeight, 0);
+            const pendingKg = currentBatches.reduce((acc, b) => acc + b.remainingQuantity, 0);
+
+            // Ghi nhận bàn giao thực tế (Page 8)
+            const handleRecordHandover = () => {
+                if (!targetBatch) return;
+                if (acceptedInput + rejectedInput !== offeredInput) {
+                    alert(`Lỗi cộng số: Được nhận (${acceptedInput}) + từ chối (${rejectedInput}) phải bằng trình giao (${offeredInput})`);
+                    return;
+                }
+
+                // Cập nhật lô gốc
+                setBatches(batches.map(b => {
+                    if (b.id === targetBatch.id) {
+                        return {
+                            ...b,
+                            remainingQuantity: Math.max(0, b.remainingQuantity - acceptedInput)
+                        };
+                    }
+                    return b;
+                }));
+
+                // Thêm sự kiện bàn giao
+                const newId = `BG-2026-${String(handovers.length + 1).padStart(3, '0')}`;
+                setHandovers([
+                    {
+                        id: newId,
+                        batchId: targetBatch.id,
+                        batchName: targetBatch.name,
+                        hubName: 'Green Life Tây Hồ',
+                        date: new Date().toISOString().slice(0, 10),
+                        offeredWeight: offeredInput,
+                        acceptedWeight: acceptedInput,
+                        rejectedWeight: rejectedInput,
+                        rejectionReason: rejectedInput > 0 ? rejectionReasonInput : '',
+                        verificationLevel: 'verified_by_hub',
+                        evidenceCode: `PHIEU-${Date.now().toString().slice(-4)}`,
+                        dataMode
+                    },
+                    ...handovers
+                ]);
+
+                setHandoverModalOpen(false);
+                showToast(`Đã ghi bàn giao ${newId}: Nhận ${acceptedInput} kg; Còn lại ${Math.max(0, targetBatch.remainingQuantity - acceptedInput)} kg.`);
+            };
+
+            // Xuất CSV UTF-8
+            const exportCSV = () => {
+                let csv = "\uFEFFMã sự kiện,Mã lô,Tên lô,Nơi nhận,Ngày,Trình giao (kg),Được nhận (kg),Từ chối (kg),Lý do,Cấp xác nhận\n";
+                currentHandovers.forEach(h => {
+                    csv += `"${h.id}","${h.batchId}","${h.batchName}","${h.hubName}","${h.date}",${h.offeredWeight},${h.acceptedWeight},${h.rejectedWeight},"${h.rejectionReason || ''}","${h.verificationLevel}"\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `wastelab-nhat-ky-${dataMode}.csv`;
+                a.click();
+                showToast('Đã tải xuống tệp CSV');
+            };
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    {/* SIDEBAR */}
+                    <aside className="w-64 bg-gradient-to-b from-[#07241b] via-[#0b3326] to-[#0e3d2e] text-white flex flex-col shrink-0 border-r border-emerald-950/40 shadow-xl z-20">
+                        <div className="p-5 border-b border-emerald-800/40">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">♻</span>
+                                <div>
+                                    <div className="text-lg font-black tracking-tight leading-tight">
+                                        Waste<span className="text-emerald-400">Lab</span>
+                                    </div>
+                                    <div className="text-[11px] text-emerald-300 font-medium">Burn or Recycle? · v2.0</div>
+                                </div>
+                            </div>
+                            <div className="text-[10px] text-emerald-200/60 mt-1">THPT Chuyên Chu Văn An · KHKT 2026–2027</div>
+                            <div className="text-[10px] text-emerald-300 font-semibold mt-0.5">Tác giả: Tạ Giang Nam & Tô Thuỳ Trân</div>
+                        </div>
+
+                        {/* MODE TOGGLE */}
+                        <div className="p-3 bg-black/25 border-b border-emerald-900/40 text-xs">
+                            <div className="flex justify-between items-center mb-1.5 font-bold">
+                                <span>Chế độ dữ liệu:</span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${dataMode === 'real' ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-900'}`}>
+                                    {dataMode === 'real' ? 'THỰC TẾ' : 'MINH HỌA'}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1 bg-black/40 p-0.5 rounded-lg">
+                                <button
+                                    onClick={() => { setDataMode('real'); showToast('Đã chuyển sang chế độ: Dữ liệu thật'); }}
+                                    className={`py-1 rounded font-bold text-[11px] ${dataMode === 'real' ? 'bg-emerald-600 text-white shadow' : 'text-emerald-200/70'}`}
+                                >
+                                    Thực tế
+                                </button>
+                                <button
+                                    onClick={() => { setDataMode('demo'); showToast('Đã chuyển sang chế độ: Dữ liệu minh họa'); }}
+                                    className={`py-1 rounded font-bold text-[11px] ${dataMode === 'demo' ? 'bg-amber-400 text-slate-900 shadow' : 'text-emerald-200/70'}`}
+                                >
+                                    Minh họa
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* MENU */}
+                        <nav className="flex-1 p-3 space-y-1 overflow-y-auto text-xs sm:text-sm font-medium">
+                            {[
+                                { id: 'home', label: 'Trang chủ', icon: '🏠' },
+                                { id: 'classify', label: 'Phân loại rác', icon: '🔍' },
+                                { id: 'hubs', label: 'Điểm thu gom', icon: '📍' },
+                                { id: 'batches', label: 'Nhật ký & Lô rác', icon: '📋', badge: currentBatches.filter(b => b.remainingQuantity > 0).length },
+                                { id: 'energy', label: 'Điện rác & Mô phỏng', icon: '♨️' },
+                                { id: 'education', label: 'Tìm hiểu & Seraphin', icon: '📖' }
+                            ].map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => { setCurrentTab(item.id); setSelectedMaterial(null); }}
+                                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-left ${currentTab === item.id ? 'bg-emerald-500/25 text-white border-l-4 border-emerald-400 font-bold' : 'text-emerald-100/75 hover:bg-white/5'}`}
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <span>{item.icon}</span>
+                                        <span>{item.label}</span>
+                                    </div>
+                                    {item.badge > 0 && (
+                                        <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600/50">
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </nav>
+                    </aside>
+
+                    {/* MAIN VIEWPORT */}
+                    <main className="flex-1 overflow-y-auto p-5 sm:p-8">
+                        <div className="max-w-5xl mx-auto space-y-6">
+                            {/* CẢNH BÁO MINH HỌA */}
+                            {dataMode === 'demo' && (
+                                <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs flex justify-between items-center font-semibold">
+                                    <span>⚠ Đang bật chế độ <b>Dữ liệu minh họa</b> – Không tính vào số liệu nhật ký thật của bạn.</span>
+                                    <button onClick={() => setDataMode('real')} className="text-amber-800 underline">Về dữ liệu thật</button>
+                                </div>
+                            )}
+
+                            {/* ==================================================== */}
+                            {/* TAB 1: TRANG CHỦ                                    */}
+                            {/* ==================================================== */}
+                            {currentTab === 'home' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-start pb-2 border-b border-emerald-950/10">
+                                        <div>
+                                            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#07241b]">WasteLab – Burn or Recycle?</h1>
+                                            <p className="text-xs sm:text-sm text-slate-600">Phân loại đúng tại nguồn, kết nối điểm thu gom thực tế và đánh giá tác động năng lượng.</p>
+                                        </div>
+                                        <select value={userDistrict} onChange={(e) => setUserDistrict(e.target.value)} className="bg-white px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-bold shadow-sm">
+                                            <option>Tây Hồ, Hà Nội</option>
+                                            <option>Ba Đình, Hà Nội</option>
+                                            <option>Cầu Giấy, Hà Nội</option>
+                                        </select>
+                                    </div>
+
+                                    {/* SEARCH BANNER */}
+                                    <div className="bg-gradient-to-r from-[#072f23] to-[#175c42] rounded-2xl p-6 sm:p-8 text-white space-y-3 shadow-md relative overflow-hidden">
+                                        <h2 className="text-xl sm:text-2xl font-black">Bạn muốn phân loại món đồ nào hôm nay?</h2>
+                                        <p className="text-xs sm:text-sm text-emerald-100 max-w-xl">Tra cứu quy cách xử lý cho 28 loại vật liệu, cách làm sạch và tìm điểm thu gom đang tiếp nhận.</p>
+                                        <div className="flex gap-2 max-w-lg pt-1">
+                                            <input
+                                                type="text"
+                                                placeholder="Nhập: chai pet, carton, vo hop sua, pin con tho..."
+                                                value={searchKeyword}
+                                                onChange={(e) => setSearchKeyword(e.target.value)}
+                                                className="flex-1 px-4 py-2.5 rounded-xl bg-white text-slate-900 text-xs sm:text-sm outline-none"
+                                            />
+                                            <button
+                                                onClick={() => { setCurrentTab('classify'); }}
+                                                className="px-5 py-2.5 bg-emerald-400 hover:bg-emerald-300 text-[#07241b] font-bold rounded-xl text-xs sm:text-sm shadow"
+                                            >
+                                                Phân loại ngay →
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* 3 THẺ THỐNG KÊ (PAGE 3) */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                            <span className="text-xs text-slate-500 font-semibold block">ĐÃ BÀN GIAO (THỰC TẾ)</span>
+                                            <div className="text-2xl font-extrabold font-mono text-[#07241b] mt-1">
+                                                {totalDeliveredKg.toFixed(1)} <span className="text-xs font-sans font-normal text-slate-400">kg</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 mt-1">Tổng từ {currentHandovers.length} lần giao thành công</p>
+                                        </div>
+
+                                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                            <span className="text-xs text-emerald-800 font-semibold block">ĐƯỢC NƠI NHẬN XÁC NHẬN</span>
+                                            <div className="text-2xl font-extrabold font-mono text-emerald-700 mt-1">
+                                                {verifiedDeliveredKg.toFixed(1)} <span className="text-xs font-sans font-normal text-slate-400">kg</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 mt-1">Có phiếu cân hoặc biên nhận đối soát</p>
+                                        </div>
+
+                                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                            <span className="text-xs text-amber-800 font-semibold block">ĐANG CHỜ BÀN GIAO</span>
+                                            <div className="text-2xl font-extrabold font-mono text-amber-700 mt-1">
+                                                {pendingKg.toFixed(1)} <span className="text-xs font-sans font-normal text-slate-400">kg</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 mt-1">Lưu trong lô của bạn, chưa giao</p>
+                                        </div>
+                                    </div>
+
+                                    {/* MỤC ẢNH MÔI TRƯỜNG & HỆ THÍ NGHIỆM */}
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+                                        <h3 className="font-bold text-slate-900 text-base">Hình Ảnh Môi Trường & Bối Cảnh Nghiên Cứu</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-900">
+                                                <img src="https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=800&q=80" alt="Hệ thí nghiệm" className="w-full h-44 object-cover" />
+                                                <div className="p-3.5 bg-white">
+                                                    <b className="text-sm text-slate-900 block">Mô hình Seebeck vi mô WasteLab</b>
+                                                    <p className="text-xs text-slate-600 mt-1">Buồng nhiệt hóa Seebeck đo lường điện áp phát sinh phục vụ quá trình phân tích dữ liệu.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-900">
+                                                <img src="https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=800&q=80" alt="Phát triển bền vững" className="w-full h-44 object-cover" />
+                                                <div className="p-3.5 bg-white">
+                                                    <b className="text-sm text-slate-900 block">Hướng tới phát triển bền vững (SDGs)</b>
+                                                    <p className="text-xs text-slate-600 mt-1">Giảm thiểu rác chôn lấp, chuyển hóa năng lượng sạch và bảo vệ hệ sinh thái rừng tự nhiên.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ==================================================== */}
+                            {/* TAB 2: PHÂN LOẠI RÁC                                */}
+                            {/* ==================================================== */}
+                            {currentTab === 'classify' && (
+                                <div className="space-y-5">
+                                    <div className="pb-2 border-b border-emerald-950/10">
+                                        <h1 className="text-2xl font-extrabold text-[#07241b]">Phân Loại Rác Có Căn Cứ</h1>
+                                        <p className="text-xs sm:text-sm text-slate-600">Tra cứu 28 loại vật liệu, hướng xử lý và kiểm tra nơi tiếp nhận phù hợp.</p>
+                                    </div>
+
+                                    {/* SEARCH INPUT */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Tìm theo tên có/không dấu: chai pet, carton, vo hop sua, pin..."
+                                            value={searchKeyword}
+                                            onChange={(e) => setSearchKeyword(e.target.value)}
+                                            className="w-full p-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-emerald-600"
+                                        />
+                                    </div>
+
+                                    {/* CHI TIẾT VẬT LIỆU KHI CHỌN */}
+                                    {selectedMaterial && (
+                                        <div className="bg-white p-6 rounded-2xl border-2 border-emerald-500 shadow-md space-y-4 animate-in fade-in">
+                                            <div className="flex justify-between items-start pb-2 border-b border-slate-100">
+                                                <div>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">{selectedMaterial.categoryLabel}</span>
+                                                    <h2 className="text-lg font-black text-slate-900 mt-1">{selectedMaterial.name}</h2>
+                                                    <p className="text-xs text-slate-500">{selectedMaterial.commonName}</p>
+                                                </div>
+                                                <button onClick={() => setSelectedMaterial(null)} className="text-xs text-slate-400 hover:text-slate-700">Đóng ✕</button>
+                                            </div>
+
+                                            {/* THẺ KẾT QUẢ 5 KHỐI (PAGE 5) */}
+                                            <div className={`p-4 rounded-xl border ${selectedMaterial.isHazardous ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
+                                                <span className="text-[10.5px] uppercase font-bold block mb-0.5 opacity-80">HƯỚNG XỬ LÝ VẬT LIỆU:</span>
+                                                <div className="text-xl font-black">{selectedMaterial.treatmentLabel}</div>
+                                                {selectedMaterial.safetyWarning && (
+                                                    <div className="mt-2 text-xs font-bold text-red-700 bg-red-100/80 p-2 rounded-lg">
+                                                        ⚠ CẢNH BÁO: {selectedMaterial.safetyWarning}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <b className="text-xs text-slate-800 block mb-1.5">Các bước chuẩn bị:</b>
+                                                <ul className="text-xs space-y-1 text-slate-600 pl-4 list-disc">
+                                                    {selectedMaterial.defaultInstructions.map((ins, idx) => (
+                                                        <li key={idx}>{ins}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+
+                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                                                <b>Trạng thái nơi nhận: </b>
+                                                <span className="text-emerald-800 font-bold">Đã có cơ sở tiếp nhận tại Tây Hồ (Green Life · Xác nhận: 02/10/2026)</span>
+                                            </div>
+
+                                            <div className="flex gap-2 pt-2">
+                                                <button
+                                                    onClick={() => {
+                                                        const id = 'LO-2026-00' + (batches.length + 1);
+                                                        setBatches([{
+                                                            id,
+                                                            name: `${selectedMaterial.name} (5 kg) - ${new Date().toLocaleDateString('vi-VN')}`,
+                                                            materialId: selectedMaterial.id,
+                                                            materialName: selectedMaterial.name,
+                                                            quantity: 5,
+                                                            remainingQuantity: 5,
+                                                            unit: 'kg',
+                                                            weightType: 'weighed',
+                                                            dataMode
+                                                        }, ...batches]);
+                                                        showToast(`Đã lưu 1 lô; Xem nhật ký (${id})`);
+                                                        setCurrentTab('batches');
+                                                    }}
+                                                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow"
+                                                >
+                                                    + Lưu vào lô vật liệu
+                                                </button>
+                                                <button onClick={() => setCurrentTab('hubs')} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+                                                    Xem điểm thu gom
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* GRID 28 VẬT LIỆU */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                                        {INITIAL_MATERIALS.filter(m => {
+                                            const q = searchKeyword.toLowerCase().trim();
+                                            if (!q) return true;
+                                            return m.name.toLowerCase().includes(q) || m.synonyms.some(s => s.includes(q));
+                                        }).map(mat => (
+                                            <div
+                                                key={mat.id}
+                                                onClick={() => setSelectedMaterial(mat)}
+                                                className="p-4 bg-white rounded-xl border border-slate-200 hover:border-emerald-500 cursor-pointer transition shadow-sm space-y-1.5"
+                                            >
+                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600">{mat.categoryLabel}</span>
+                                                <h3 className="font-bold text-sm text-slate-900">{mat.name}</h3>
+                                                <p className="text-xs text-slate-500 line-clamp-1">{mat.commonName}</p>
+                                                <div className="text-[11px] font-bold text-emerald-700 pt-1">Chọn phân loại →</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ==================================================== */}
+                            {/* TAB 3: ĐIỂM THU GOM                                 */}
+                            {/* ==================================================== */}
+                            {currentTab === 'hubs' && (
+                                <div className="space-y-5">
+                                    <div className="pb-2 border-b border-emerald-950/10">
+                                        <h1 className="text-2xl font-extrabold text-[#07241b]">Mạng Lưới Điểm Thu Gom Tiếp Nhận</h1>
+                                        <p className="text-xs sm:text-sm text-slate-600">Cơ sở thu gom có điều kiện tiếp nhận và căn cứ xác nhận minh bạch tại Hà Nội.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {INITIAL_HUBS.map(hub => (
+                                            <div key={hub.id} className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800">{hub.district}</span>
+                                                        <h3 className="font-bold text-base text-slate-900 mt-1">{hub.name}</h3>
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-600">📍 {hub.address}</p>
+                                                <div className="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
+                                                    <b>Điều kiện nhận: </b>
+                                                    <span className="text-slate-600">{hub.conditions}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+                                                    <a href={`tel:${hub.phone}`} className="px-3 py-1.5 bg-emerald-700 text-white font-bold rounded-lg">📞 Gọi: {hub.phone}</a>
+                                                    <span className="text-emerald-700 font-semibold text-[11px]">✓ Xác nhận ({hub.verifiedDate})</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ==================================================== */}
+                            {/* TAB 4: NHẬT KÝ & LÔ RÁC (ĐÚNG CA 5KG -> NHẬN 4KG / TỪ CHỐI 1KG) */}
+                            {/* ==================================================== */}
+                            {currentTab === 'batches' && (
+                                <div className="space-y-5">
+                                    <div className="flex justify-between items-center pb-2 border-b border-emerald-950/10">
+                                        <div>
+                                            <h1 className="text-2xl font-extrabold text-[#07241b]">Nhật Ký & Lô Vật Liệu</h1>
+                                            <p className="text-xs sm:text-sm text-slate-600">Quản lý từng lô rác, ghi nhận lần giao thực tế và xuất tệp CSV.</p>
+                                        </div>
+                                        <button onClick={exportCSV} className="px-3.5 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">
+                                            ↓ Xuất CSV (UTF-8)
+                                        </button>
+                                    </div>
+
+                                    {/* LÔ VẬT LIỆU */}
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+                                        <h3 className="font-bold text-slate-900 text-sm">Lô vật liệu trong kho ({currentBatches.length})</h3>
+                                        <div className="space-y-2.5">
+                                            {currentBatches.map(b => (
+                                                <div key={b.id} className="p-3.5 border border-slate-200 rounded-xl flex justify-between items-center text-xs">
+                                                    <div>
+                                                        <span className="font-mono font-bold text-emerald-800">{b.id}</span>
+                                                        <b className="block text-sm text-slate-900 mt-0.5">{b.name}</b>
+                                                        <span className="text-slate-500">Ban đầu: {b.quantity} kg · Chưa giao: <b className="text-amber-700">{b.remainingQuantity} kg</b></span>
+                                                    </div>
+                                                    {b.remainingQuantity > 0 ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                setTargetBatch(b);
+                                                                setOfferedInput(b.remainingQuantity);
+                                                                setAcceptedInput(b.remainingQuantity > 1 ? b.remainingQuantity - 1 : b.remainingQuantity);
+                                                                setRejectedInput(b.remainingQuantity > 1 ? 1 : 0);
+                                                                setRejectionReasonInput('1 kg dính dầu mỡ không đạt tiêu chuẩn');
+                                                                setHandoverModalOpen(true);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                                                        >
+                                                            Ghi bàn giao
+                                                        </button>
+                                                    ) : (
+                                                        <span className="font-bold text-slate-400">Đã giao hết</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* BẢNG NHẬT KÝ BÀN GIAO THỰC TẾ */}
+                                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                        <div className="p-4 border-b border-slate-100 font-bold text-sm text-slate-900">
+                                            Nhật ký các lần bàn giao thực tế ({currentHandovers.length})
+                                        </div>
+                                        <table className="w-full text-xs text-left">
+                                            <thead className="bg-slate-50 text-slate-600 uppercase font-bold text-[11px]">
+                                                <tr>
+                                                    <th className="p-3">Mã sự kiện</th>
+                                                    <th className="p-3">Lô & Điểm nhận</th>
+                                                    <th className="p-3 text-right">Trình giao</th>
+                                                    <th className="p-3 text-right text-emerald-700">Được nhận</th>
+                                                    <th className="p-3 text-right text-red-600">Từ chối</th>
+                                                    <th className="p-3">Cấp xác nhận</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {currentHandovers.map(h => (
+                                                    <tr key={h.id} className="hover:bg-slate-50">
+                                                        <td className="p-3 font-mono font-bold">{h.id}</td>
+                                                        <td className="p-3">
+                                                            <b>{h.batchId}</b>
+                                                            <div className="text-[11px] text-slate-500">{h.hubName} · {h.date}</div>
+                                                        </td>
+                                                        <td className="p-3 text-right font-mono">{h.offeredWeight} kg</td>
+                                                        <td className="p-3 text-right font-mono font-bold text-emerald-700">+{h.acceptedWeight} kg</td>
+                                                        <td className="p-3 text-right font-mono text-red-600">
+                                                            {h.rejectedWeight > 0 ? `-${h.rejectedWeight} kg (${h.rejectionReason})` : '0 kg'}
+                                                        </td>
+                                                        <td className="p-3">
+                                                            <span className="bg-emerald-50 text-emerald-800 text-[10.5px] font-bold px-2 py-0.5 rounded border border-emerald-200">
+                                                                Xác nhận nơi nhận
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ==================================================== */}
+                            {/* TAB 5: ĐIỆN RÁC & MÔ PHỎNG (CHUẨN 100KG = 17.85 KWH) */}
+                            {/* ==================================================== */}
+                            {currentTab === 'energy' && (
+                                <div className="space-y-5">
+                                    <div className="pb-2 border-b border-emerald-950/10">
+                                        <h1 className="text-2xl font-extrabold text-[#07241b]">Điện Rác: Kịch Bản & So Sánh Phương Án</h1>
+                                        <p className="text-xs sm:text-sm text-slate-600">Mô phỏng mẻ 100 kg kiểm tra kế thừa (Page 12 đặc tả THPT Chuyên Chu Văn An).</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div className="p-5 bg-gradient-to-br from-[#07241b] to-[#144d37] text-white rounded-2xl shadow-sm space-y-1">
+                                            <span className="text-xs text-emerald-300 font-bold uppercase">ĐIỆN RÒNG ƯỚC TÍNH (MÔ PHỎNG)</span>
+                                            <div className="text-3xl font-black font-mono">17.85 <span className="text-base font-normal">kWh</span></div>
+                                            <p className="text-xs text-emerald-200">Sau khi trừ 10% điện tự dùng của lò</p>
+                                        </div>
+
+                                        <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-1">
+                                            <span className="text-xs text-slate-500 font-bold uppercase">MỐC ĐỐT HỖN HỢP LÝ THUYẾT</span>
+                                            <div className="text-3xl font-black font-mono text-slate-700">37.75 <span className="text-base font-normal">kWh</span></div>
+                                            <p className="text-xs text-slate-500">Nếu đốt toàn bộ không phân loại (mất sạch vật liệu)</p>
+                                        </div>
+
+                                        <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-1">
+                                            <span className="text-xs text-emerald-800 font-bold uppercase">VẬT LIỆU THU HỒI TUẦN HOÀN</span>
+                                            <div className="text-2xl font-black text-emerald-800">32.0 kg tái chế</div>
+                                            <p className="text-xs text-slate-500">+ 24.5 kg rác hữu cơ ủ phân compost</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+                                        <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                            <h3 className="font-bold text-slate-900 text-sm">Phân bổ dòng vật liệu mẻ 100 kg mẫu gốc:</h3>
+                                            <span className="font-mono text-xs text-slate-500">η = 20%, Tự dùng = 10%</span>
+                                        </div>
+                                        <div className="text-xs space-y-1.5 leading-relaxed">
+                                            <div>♻ <b>Thu hồi tái chế vật liệu:</b> 32.0 kg (80% nhựa, giấy, kim loại)</div>
+                                            <div>🌿 <b>Thu hồi sinh học (Ủ phân hữu cơ):</b> 24.5 kg</div>
+                                            <div>♨ <b>Tuyến thu hồi nhiệt điện (vào lò đốt):</b> 35.5 kg</div>
+                                            <div>🧱 <b>Vô cơ trơ khác:</b> 3.0 kg</div>
+                                            <div>⚠ <b>Pin & thu gom chuyên biệt:</b> 5.0 kg</div>
+                                        </div>
+                                        <div className="p-3 bg-amber-50 text-amber-900 rounded-xl border border-amber-200 text-xs mt-3 leading-relaxed">
+                                            <b>Nhận xét chuyên môn KHKT: </b>
+                                            Mặc dù đốt hỗn hợp cho sản lượng điện danh nghĩa cao hơn (37.75 kWh vs 17.85 kWh), nhưng làm mất hoàn toàn 32 kg nhựa, giấy và làm tăng nguy cơ sinh khí độc do đốt lẫn pin. Phân loại trước xử lý mang lại tổng giá trị tài nguyên bền vững cao hơn.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ==================================================== */}
+                            {/* TAB 6: TÌM HIỂU & SERAPHIN                          */}
+                            {/* ==================================================== */}
+                            {currentTab === 'education' && (
+                                <div className="space-y-5">
+                                    <div className="pb-2 border-b border-emerald-950/10">
+                                        <h1 className="text-2xl font-extrabold text-[#07241b]">Tìm Hiểu Điện Rác & Tư Liệu Seraphin</h1>
+                                        <p className="text-xs sm:text-sm text-slate-600">Ghi chép khảo sát thực địa của học sinh THPT Chuyên Chu Văn An và luyện tập tình huống.</p>
+                                    </div>
+
+                                    <div className="p-5 bg-gradient-to-r from-[#093324] to-[#175d41] text-white rounded-2xl shadow-sm">
+                                        <h3 className="font-bold text-lg">Chuyên đề Khảo sát: Nhà máy Điện rác Seraphin (Hà Nội)</h3>
+                                        <p className="text-xs text-emerald-100 mt-1">
+                                            Tư liệu khảo sát kỹ thuật thực địa. Chú thích: Nhà máy là đối tượng khảo sát kỹ thuật của học sinh, không phải đơn vị triển khai phần mềm WasteLab.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
+                                            <b className="text-sm text-[#07241b] block">1. Thu hồi kim loại từ xỉ đáy sau đốt</b>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Sau khi rác cháy ở nhiệt độ trên 850°C, phần xỉ đáy còn lại (~15-20% khối lượng) được nam châm tách thu hồi sắt, nhôm. Điều này khẳng định: Tách vật liệu ngay từ đầu hiệu quả hơn nhiều.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
+                                            <b className="text-sm text-[#07241b] block">2. Kiểm soát tro bay (Fly Ash)</b>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Tro bay (~2-3% khối lượng) giữ lại tại bộ lọc túi vải có chứa dioxin và kim loại nặng. Phần này được hóa rắn bằng xi măng và chôn lấp chất thải nguy hại riêng.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
+                                            <b className="text-sm text-[#07241b] block">3. Hao hụt nước rỉ rác (15-20%)</b>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Rác tiếp nhận tại bể chứa được ủ từ 3-7 ngày để ép chảy nước rác. Khối lượng nạp vào phễu lò nhẹ hơn khối lượng cân lúc nhập trạm.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-1.5 shadow-sm">
+                                            <b className="text-sm text-[#07241b] block">4. Chuỗi công nghệ phát điện</b>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Lò ghi cơ học ➔ Nồi hơi thu nhiệt ➔ Tua-bin hơi nước (40 bar, 400°C) ➔ Máy phát điện đồng bộ nâng áp hòa lưới 110kV.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    {/* MODAL GHI BÀN GIAO THỰC TẾ (PAGE 8) */}
+                    {handoverModalOpen && targetBatch && (
+                        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <h3 className="font-bold text-sm text-slate-900">Ghi Bàn Giao: {targetBatch.name}</h3>
+                                    <button onClick={() => setHandoverModalOpen(false)} className="text-slate-400">✕</button>
+                                </div>
+
+                                <div className="text-xs space-y-3">
+                                    <div>
+                                        <label className="block font-bold text-slate-700 mb-1">Khối lượng cân trình giao tại điểm (kg):</label>
+                                        <input
+                                            type="number"
+                                            value={offeredInput}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                setOfferedInput(val);
+                                                setAcceptedInput(val);
+                                                setRejectedInput(0);
+                                            }}
+                                            className="w-full p-2 border border-slate-200 rounded-lg font-mono font-bold"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl">
+                                        <div>
+                                            <label className="block font-bold text-emerald-800 mb-1">Được nhận (kg):</label>
+                                            <input
+                                                type="number"
+                                                value={acceptedInput}
+                                                onChange={(e) => {
+                                                    const val = Number(e.target.value);
+                                                    setAcceptedInput(val);
+                                                    setRejectedInput(offeredInput - val);
+                                                }}
+                                                className="w-full p-1.5 border border-emerald-300 rounded font-mono font-bold text-emerald-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-bold text-red-700 mb-1">Bị từ chối (kg):</label>
+                                            <input
+                                                type="number"
+                                                value={rejectedInput}
+                                                onChange={(e) => {
+                                                    const val = Number(e.target.value);
+                                                    setRejectedInput(val);
+                                                    setAcceptedInput(offeredInput - val);
+                                                }}
+                                                className="w-full p-1.5 border border-red-300 rounded font-mono font-bold text-red-700"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {rejectedInput > 0 && (
+                                        <div>
+                                            <label className="block font-bold text-slate-700 mb-1">Lý do từ chối:</label>
+                                            <input
+                                                type="text"
+                                                value={rejectionReasonInput}
+                                                onChange={(e) => setRejectionReasonInput(e.target.value)}
+                                                placeholder="VD: Dính dầu mỡ, lẫn tạp chất..."
+                                                className="w-full p-2 border border-slate-200 rounded-lg"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-2 pt-2">
+                                        <button onClick={() => setHandoverModalOpen(false)} className="px-4 py-2 bg-slate-100 rounded-lg font-semibold">Hủy</button>
+                                        <button onClick={handleRecordHandover} className="px-4 py-2 bg-emerald-700 text-white rounded-lg font-bold">Xác nhận lưu nhật ký</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TOAST */}
+                    {toastMessage && (
+                        <div className="fixed bottom-6 right-6 z-50 bg-[#07241b] text-white px-4 py-3 rounded-xl shadow-xl border border-emerald-500/40 text-xs font-semibold">
+                            ✓ {toastMessage}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

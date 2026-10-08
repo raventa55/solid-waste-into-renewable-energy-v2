@@ -1,0 +1,6 @@
+{
+  "name": "WasteLab AI - Giám sát Rác thải & Môi trường",
+  "description": "Nền tảng phân tích dữ liệu chuyển hóa rác thải thành năng lượng, tích hợp AI đánh giá và hình ảnh môi trường.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
